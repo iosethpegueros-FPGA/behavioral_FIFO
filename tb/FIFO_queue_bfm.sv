@@ -47,13 +47,14 @@ always #(CLKB_PERIOD/2) clk_b = ~clk_b;
 task push_data_single;
     input [DATA_WIDTH-1:0] write_data;
     begin
-        `IF_DEBUG_PRINT_ENABLED $display("0 write_data: %h, bfm.datain: %h",write_data,bfm.datain_a);
-        {bfm.datain_a,bfm.push} <= {write_data,1'b1};
-        @(posedge bfm.clk_a);
-        `IF_DEBUG_PRINT_ENABLED $display("1 write_data: %h, bfm.datain: %h",write_data,bfm.datain_a);
-        {bfm.datain_a,bfm.push} <= {write_data,1'b0};
-        @(posedge bfm.clk_a);
-        `IF_DEBUG_PRINT_ENABLED $display("2 write_data: %h, bfm.datain: %h",write_data,bfm.datain_a);
+        `IF_DEBUG_PRINT_ENABLED $display("0 write_data: %h, bfm.datain: %h",write_data,datain_a);
+        {datain_a,push} <= {write_data,1'b1};
+        @(posedge clk_a);
+        `IF_DEBUG_PRINT_ENABLED $display("1 write_data: %h, datain: %h",write_data,datain_a);
+        {datain_a,push} <= {write_data,1'b0};
+        @(posedge clk_a);
+        {datain_a,push}  = {write_data,1'b0};
+        `IF_DEBUG_PRINT_ENABLED $display("2 write_data: %h, datain: %h",write_data,datain_a);
     end
 endtask
 
@@ -62,12 +63,13 @@ task pop_data_single;
     //ref logic[DATA_WIDTH-1:0] read_data;
     output [DATA_WIDTH-1:0] read_data;
     begin
-        {read_data,bfm.pop} <= {bfm.dataout_b,1'b1};
-        `IF_DEBUG_PRINT_ENABLED $display("pre edge bfm.data_out: %h , read_data: %h",bfm.dataout_b,read_data);
-        @(posedge bfm.clk_b);
-        {read_data,bfm.pop} <= {bfm.dataout_b,1'b0};
-         `IF_DEBUG_PRINT_ENABLED $display("pos edge bfm.data_out: %h , read_data: %h",bfm.dataout_b,read_data);        
-        @(posedge bfm.clk_b);
+        {read_data,pop} <= {dataout_b,1'b1};
+        `IF_DEBUG_PRINT_ENABLED $display("pre edge data_out: %h , read_data: %h",dataout_b,read_data);
+        @(posedge clk_b);
+        {read_data,pop} <= {dataout_b,1'b0};
+        `IF_DEBUG_PRINT_ENABLED $display("at edge data_out: %h , read_data: %h",dataout_b,read_data);         
+        @(posedge clk_b);
+        `IF_DEBUG_PRINT_ENABLED $display("pos edge data_out: %h , read_data: %h",dataout_b,read_data);  
 
     end
 endtask

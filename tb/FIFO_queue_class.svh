@@ -19,6 +19,18 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
+/**
+Class: FIFO_queue_class 
+Author: Ioseth Ibis Pegueros Lepe  
+Date: 05/29/2026
+Version: 1
+Description: this is a behavioral implementation of a FIFO memory, this is is a class in system verilog.
+             it contains 3 tasks: FIFO_READ,FIFO_WRITE and updateFlags. they run in parallel when executed calling execute().
+Ingroup: NA 
+Defgroup: NA
+
+**/
+
 
 class FIFO_queue_class;
 
@@ -30,22 +42,31 @@ class FIFO_queue_class;
    import FIFO_queue_pkg::*;
    virtual FIFO_queue_bfm bfm;
  
- 
- //TODO: fix parameters, use parameters delcared in inteface
+ // Array: queue_16x16
+ // memory array, data is DATA_WIDTHxFIFO_DEPTH.
+ // TODO: fix parameters, use parameters delcared in inteface.
  logic [DATA_WIDTH-1:0] queue_16x16 [$:FIFO_DEPTH];
  
+
+ 
+ // Function: Constructor 
+ // initializes bfm with a generic memory interface: <FIFO_queue_bfm>
  function new(virtual FIFO_queue_bfm bfm_constructor);
     bfm=bfm_constructor;
  endfunction: new
 
 
- 
+
+ // Function: FIFO_full
+ // returns 1 if memory array is full
  function bit FIFO_full();
     bit full;
     full = (queue_16x16.size()>=FIFO_DEPTH)? 1'b1 : 1'b0; 
     return full;
  endfunction 
  
+ // Function: FIFO_empty
+ // returns 1 if memory array is full
   function bit FIFO_empty();
     bit empty;
     empty = (queue_16x16.size()=='h0)? 1'b1 : 1'b0;
@@ -56,27 +77,23 @@ class FIFO_queue_class;
 //    bfm.full = FIFO_full();
 //    bfm.empty = FIFO_empty();
 // endfunction
- 
+
+// Task: update_flags
+// updates bfm's (<bfm>) full and empty flags. 
+// executes forever, returns nothing 
 task update_flags();
         forever begin: update
-            // ugly solution using both clock edges to update flags as fast as posible
-//          @(posedge bfm.clk_a or negedge bfm.clk_a)bfm.full = FIFO_full();
-//          @(posedge bfm.clk_b or negedge bfm.clk_b)bfm.empty = FIFO_empty();
             // ugly solution using a single simulation step to update flags as fast as posilbe . probably more reliable than using dual clock rate
-            // TODO: find a better more standard (less tricky) way to update flags instantanously. like a combinatorial signal.
+            // TODO: find a better more standard (less tricky) way to update flags instantanously. a mode that behaves like a combinatorial signal.
             #1 bfm.full = FIFO_full();
             #1 bfm.empty = FIFO_empty();
         end : update
 endtask
   
- task execute();
-    fork
-        run_FIFO_write();
-        run_FIFO_read();
-        update_flags();
-    join
-endtask: execute
- 
+
+ // Task: run_FIFO_write
+ // this tasks evalyates bfm.push every clock cycle. when it is active it'll cause bfm.datain_a to be pueshed into the memory array <queue_16x16> as long as it's not full (per <FIFO_full>)
+ // executes forever, returns nothing 
 task run_FIFO_write();
     forever begin: write_fifo
     @(posedge bfm.clk_a);
@@ -90,13 +107,16 @@ task run_FIFO_write();
     end: write_fifo
 endtask
 
+ // Task: run_FIFO_read
+ // this tasks evalyates bfm.pop every clock cycle. when it is active it'll assign  bfm.dataout_b with the laste element in the memory array <queue_16x16> as long as it's not empty (per <FIFO_empty>)
+ // executes forever, returns nothing 
 task run_FIFO_read;
     forever begin: read_fifo 
 //    @(posedge bfm.clk_b);
     #1 // ugly solution to instantaneous flag check for ideal behavior . without a delay simulation gets stuck TODO: find a standard solution for this problem 
     if(bfm.pop)begin
         `IF_DEBUG_PRINT_ENABLED $display("%0t,attempting pop data: %2h size: %2d",$realtime,bfm.dataout_b,queue_16x16.size());
-        if(!FIFO_empty())begin//if(!bfm.empty)begin
+        if(!FIFO_empty())begin
             @(posedge bfm.clk_b);
             bfm.dataout_b=queue_16x16.pop_back();
             `IF_DEBUG_PRINT_ENABLED $display("%0t,popped data: %2h size: %2d",$realtime,bfm.dataout_b,queue_16x16.size());
@@ -105,5 +125,15 @@ task run_FIFO_read;
     end: read_fifo
 endtask
  
+// Task: execute
+// launches the 3 tasks of this class in parallel. <run_FIFO_write><run_FIFO_read><update_flags>
+// returns nothing
+task execute();
+    fork
+        run_FIFO_write();
+        run_FIFO_read();
+        update_flags();
+    join
+endtask: execute
 
 endclass

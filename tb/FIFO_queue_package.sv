@@ -23,7 +23,7 @@ package FIFO_queue_pkg;
  
  parameter DATA_WIDTH = 16; //FIFO_queue_bfm::DATA_WIDTH;
  parameter FIFO_DEPTH = 16; //FIFO_queue_bfm::FIFO_DEPTH;
- parameter STIMULUS_DEPTH = 1024;
+ parameter STIMULUS_DEPTH = 65535;
  
 
  
